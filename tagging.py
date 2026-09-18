@@ -1,4 +1,10 @@
-"""WD14 二次元角色打标封装（接收 bytes，供 HTTP 服务调用）"""
+"""WD14 二次元角色打标封装（接收 bytes，供 HTTP 服务调用）
+
+模型来源：SmilingWolf/wd-swinv2-tagger-v3（WD14 tagger 系列 v3，SwinV2 骨干，
+Apache-2.0；训练数据 Danbooru、标签更新至 2024-02-28），由 dghs-imgutils 从
+deepghs/wd14_tagger_with_embeddings 加载、ONNXRuntime 本地推理。
+详见 README「模型与数据来源」。
+"""
 
 from __future__ import annotations
 

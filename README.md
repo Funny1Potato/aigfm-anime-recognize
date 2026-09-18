@@ -87,9 +87,25 @@ curl -X POST http://127.0.0.1:8000/recognize \
 - `rating`：画风分级概率，插件侧用于 NSFW 标注
 - `people_count`：从 general 特征提取的图中人数（Ngirls/Nboys 取最大），无数值标签为 `null`（单人图通常为 1）
 
+## 模型与数据来源
+
+本服务不自研模型，只是把开源模型封装成 HTTP 接口；识别能力与局限性均来自上游：
+
+| 组件 | 来源 | 说明 |
+|---|---|---|
+| 打标模型 | [`SmilingWolf/wd-swinv2-tagger-v3`](https://huggingface.co/SmilingWolf/wd-swinv2-tagger-v3) | WD14 tagger 系列 v3，作者 **SmilingWolf**，许可 **Apache-2.0**；SwinV2 骨干，ONNX 格式 |
+| 模型加载仓库 | [`deepghs/wd14_tagger_with_embeddings`](https://huggingface.co/deepghs/wd14_tagger_with_embeddings) | DeepGHS 的打包仓库（含上述 `model.onnx` 与配套 embeddings），`dghs-imgutils` 默认从此处加载 |
+| 推理框架 | [`dghs-imgutils`](https://github.com/deepghs/imgutils)（[WD14 打标文档](https://dghs-imgutils.deepghs.org/main/api_doc/tagging/wd14.html)） | 纯 ONNXRuntime 实现；模块声明参考了 [SmilingWolf/wd-v1-4-tags](https://huggingface.co/spaces/SmilingWolf/wd-v1-4-tags) |
+| 标签体系 | Danbooru | `角色名_(作品名)` 形式的 booru 标签，动漫与二次元手游共用同一套标签空间 |
+| 训练数据 | Danbooru 图片（ID 取模 0000–0899），**标签更新至 2024-02-28** | 训练工具 [SmilingWolf/JAX-CV](https://github.com/SmilingWolf/JAX-CV)，TPU 由 Google TRC 提供 |
+
+- 模型文件约 446MB，首次启动自动从 HuggingFace 下载到本地缓存，之后完全离线推理（不联网、不调用第三方 API）
+- 模型许可为 **Apache-2.0**（以模型页为准）；本仓库只提供调用封装，不修改模型权重
+- 上表「标签更新至 2024-02-28」正是下面第 1 条局限（新游/新角色认不出）的直接原因
+
 ## 已知局限
 
-1. **训练数据截止 2024 年前后**：新游/新角色可能无标签，`characters` 为空
+1. **训练数据截止 2024 年前后**（标签更新至 2024-02-28）：新游/新角色可能无标签，`characters` 为空
 2. **多人同图会漏**：模型对整张图打标，多人合影可能只返回其中部分角色
 3. **皮肤/异格不区分**：同一角色的泳装/节日限定/异格通常只给基础角色名
 4. **3D 战斗小人 / 游戏内截图识别率明显偏低**，官方 2D 立绘最准
