@@ -1,0 +1,4 @@
+# Windows 批处理必须 CRLF，否则 cmd 在 if(...) 块内会误报「此时不应有 ||」
+*.bat text eol=crlf
+# Shell 脚本必须 LF，否则 Linux 报 bad interpreter
+*.sh text eol=lf
