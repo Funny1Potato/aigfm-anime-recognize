@@ -1,0 +1,13 @@
+# 依赖钉版本说明（踩坑结论，勿随意放开）：
+# - dghs-imgutils 自身钉死 numpy<2
+# - opencv-contrib-python 4.12+ 要求 numpy>=2，与 numpy<2 硬冲突；
+#   <=4.11.0.86 是唯一可用区间
+# - dghs-imgutils 没有声明 CPU 版 onnxruntime，必须显式安装
+numpy<2
+opencv-contrib-python<=4.11.0.86
+dghs-imgutils
+onnxruntime
+fastapi
+uvicorn
+pillow
+python-multipart
