@@ -14,7 +14,9 @@
 - 结果按图片内容 SHA-256 缓存（默认 24h），同一张图重复请求不重复推理
 - 可选 Bearer token 鉴权；GIF 自动取第一帧；图片大小上限 20MB
 
-## 一键部署
+## 部署（安装 → 启动，两步）
+
+### 1. 安装（只需执行一次）
 
 ```bash
 # Windows
@@ -24,9 +26,21 @@ install.bat
 chmod +x install.sh && ./install.sh
 ```
 
-脚本会：创建 `.venv` → 安装钉版本依赖 → 预热（首次运行从 HuggingFace 下载约 446MB 模型）→ 启动服务（`0.0.0.0:8000`）。
+脚本会：创建 `.venv` → 安装钉版本依赖 → 预热（首次运行从 HuggingFace 下载约 446MB 模型）。
 
 > 国内网络首次下载模型需走镜像：`install.bat` / `install.sh` 已默认设置 `HF_ENDPOINT=https://hf-mirror.com`，国外直连可注释掉对应行。
+
+### 2. 启动（可反复执行）
+
+```bash
+# Windows
+start.bat
+
+# Linux / macOS
+chmod +x start.sh && ./start.sh
+```
+
+默认监听 `0.0.0.0:8000`；正式部署建议用 systemd / NSSM / 计划任务托管（`start.sh` 会打印 nohup 示例）。
 
 ## 手动部署
 
