@@ -16,9 +16,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import FastAPI, Header, HTTPException, Request
 from PIL import Image
-from pydantic import BaseModel
 
 from tagging import prewarm, tag_characters
 
@@ -83,29 +82,44 @@ async def health():
     return {"status": "ok"}
 
 
-class RecognizeIn(BaseModel):
-    image: str  # base64 编码的图片
-    character_threshold: float | None = None  # 覆盖服务端默认阈值
-
-
 @app.post("/recognize")
-async def recognize(
-    payload: RecognizeIn | None = None,
-    file: UploadFile | None = File(None),
-    authorization: str | None = Header(None),
-):
-    """接收 multipart file 或 JSON base64，返回角色识别结果。"""
+async def recognize(request: Request, authorization: str | None = Header(None)):
+    """接收 multipart file（字段名 file）或 JSON base64（字段名 image），返回角色识别结果。"""
     _check_auth(authorization)
 
-    if file is not None:
-        data = await file.read()
-    elif payload is not None:
+    content_type = request.headers.get("content-type", "")
+    threshold = CHARACTER_THRESHOLD
+    if content_type.startswith("multipart/"):
+        form = await request.form()
+        f = form.get("file")
+        if f is None:
+            raise HTTPException(status_code=400, detail="need image (multipart field 'file')")
+        data = await f.read()
+        t = form.get("character_threshold")
+        if t:
+            try:
+                threshold = float(t)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="invalid character_threshold")
+    else:
         try:
-            data = base64.b64decode(payload.image)
+            body = await request.json()
+        except Exception:
+            raise HTTPException(status_code=400, detail="invalid json body")
+        body = body if isinstance(body, dict) else {}
+        b64 = body.get("image")
+        if not b64:
+            raise HTTPException(status_code=400, detail="need image (JSON field 'image')")
+        try:
+            data = base64.b64decode(b64)
         except Exception:
             raise HTTPException(status_code=400, detail="invalid base64")
-    else:
-        raise HTTPException(status_code=400, detail="need image (multipart file or JSON base64)")
+        t = body.get("character_threshold")
+        if t:
+            try:
+                threshold = float(t)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="invalid character_threshold")
 
     data = _decode_image(data)
     key = hashlib.sha256(data).hexdigest()
@@ -115,11 +129,6 @@ async def recognize(
     if hit and now - hit[0] < CACHE_TTL:
         return hit[1]
 
-    threshold = (
-        payload.character_threshold
-        if payload and payload.character_threshold
-        else CHARACTER_THRESHOLD
-    )
     async with _semaphore:
         result = await asyncio.get_running_loop().run_in_executor(
             _executor, tag_characters, data, threshold,

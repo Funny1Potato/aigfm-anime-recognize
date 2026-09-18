@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import re
 from typing import Any
 
@@ -31,7 +32,7 @@ def tag_characters(
     if model_name:
         kwargs["model_name"] = model_name
 
-    rating, features, chars = get_wd14_tags(image_bytes, **kwargs)
+    rating, features, chars = get_wd14_tags(io.BytesIO(image_bytes), **kwargs)
 
     hits = sorted(
         ((str(name), float(score)) for name, score in (chars or {}).items()),
